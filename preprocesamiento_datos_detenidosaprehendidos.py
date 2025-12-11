@@ -17,3 +17,20 @@ try:
 
 except Exception as e:
     print("Error cargando el Excel:", e)
+
+
+
+# Seleccionar columnas de interés
+cols_interes = [
+    "fecha_completa", "fecha", "latitud", "longitud",
+    "codigo_parroquia", "nombre_parroquia",
+    "presunta_infraccion", "tipo", "arma", "movilizacion"
+]
+
+df_apre_clean = df_apre[cols_interes].copy()
+
+# Crear características de tiempo
+df_apre_clean["franja_horaria"] = df_apre_clean["fecha_completa"].dt.hour
+df_apre_clean["dia"] = df_apre_clean["fecha_completa"].dt.day
+df_apre_clean["mes"] = df_apre_clean["fecha_completa"].dt.month
+df_apre_clean["dia_semana"] = df_apre_clean["fecha_completa"].dt.dayofweek
