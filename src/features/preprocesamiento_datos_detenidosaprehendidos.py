@@ -1,0 +1,155 @@
+#preprocesamiento datos de aprehendidos/detenidos
+import pandas as pd
+import numpy as np
+import os
+
+#CARGA DE DATOS
+ruta_padre = os.path.join(os.pardir, os.pardir, "data")
+datos_originales = os.path.join(
+    ruta_padre, 
+    "raw", 
+    "detenidosaprehendidos", 
+    "dataset", 
+    "mdi_detenidosaprehendidos_pm_2025_enero_octubre.xlsx"
+)
+nombre_datos_procesados = os.path.join(
+    ruta_padre,
+    "processed",
+    "aprehendidos_limpio_final.csv"
+)
+
+try:
+    print("Cargando archivo Excel... esto puede tardar unos segundos...")
+    df_apre = pd.read_excel(
+        datos_originales,
+        sheet_name=1,
+        dtype={'codigo_parroquia': str},
+        engine='openpyxl'
+    )
+    print(f"Registros totales: {len(df_apre)}")
+
+except Exception as e:
+    print("Error cargando el Excel:", e)
+
+# NORMALIZACIÓN DE DATOS DE LATITUD Y LONGITUD
+for col in ["latitud", "longitud"]:
+    df_apre[col] = (
+        df_apre[col]
+        .astype(str)
+        .str.replace(",", ".", regex=False)
+    )
+    df_apre[col] = pd.to_numeric(df_apre[col], errors="coerce")
+
+# ELIMINAR COLUMNAS INVÁLIDAS
+df_apre = df_apre.dropna(subset=["latitud", "longitud"])
+df_apre = df_apre[(df_apre["latitud"] != 0) & (df_apre["longitud"] != 0)]
+
+
+# PROCESAR FECHA Y HORA
+try:
+    df_apre["fecha"] = pd.to_datetime(df_apre["fecha_detencion_aprehension"], errors="coerce")
+
+    #HORA COMO STRING LIMPIO
+    df_apre["hora_limpia"] = (
+        df_apre["hora_detencion_aprehension"]
+        .astype(str)
+        .str.replace(" ", "")
+        .str.strip()
+    )
+
+    #COMBINAR FECHA Y HORA
+    df_apre["fecha_completa"] = pd.to_datetime(
+        df_apre["fecha"].astype(str) + " " + df_apre["hora_limpia"],
+        errors="coerce"
+    )
+
+except Exception as e:
+    print("Advertencia procesando fecha/hora:", e)
+
+# Seleccionar columnas de interés
+cols_interes = [
+    "fecha_completa", "fecha", "latitud", "longitud",
+    "codigo_parroquia", "nombre_parroquia",
+    "presunta_infraccion", "tipo", "arma", "movilizacion"
+]
+
+df_apre_clean = df_apre[cols_interes].copy()
+
+# Crear características de tiempo
+df_apre_clean["franja_horaria"] = df_apre_clean["fecha_completa"].dt.hour
+df_apre_clean["dia"] = df_apre_clean["fecha_completa"].dt.day
+df_apre_clean["mes"] = df_apre_clean["fecha_completa"].dt.month
+df_apre_clean["dia_semana"] = df_apre_clean["fecha_completa"].dt.dayofweek
+
+#grid espacial
+df_apre_clean["lat_grid"] = df_apre_clean["latitud"].round(3)
+df_apre_clean["lon_grid"] = df_apre_clean["longitud"].round(3)
+
+
+#conteo de delios por dia y zona
+grouped = (
+    df_apre_clean
+    .groupby(["lat_grid", "lon_grid", "fecha"])
+    .size()
+    .reset_index(name="conteo_delitos")
+)
+# unir conteo al dataframe principal
+df_apre_clean = df_apre_clean.merge(
+    grouped,
+    on=["lat_grid", "lon_grid", "fecha"],
+    how="left"
+)
+
+
+
+
+delitos_interes = [
+    'DELITOS CONTRA EL DERECHO A LA PROPIEDAD',
+    'DELITOS POR LA PRODUCCIÓN O TRÁFICO ILÍCITO DE SUSTANCIAS CATALOGADAS SUJETAS A FISCALIZACIÓN',
+    'DELITOS CONTRA LA SEGURIDAD PÚBLICA',
+    'DELITOS CONTRA LA EFICIENCIA DE LA ADMINISTRACIÓN PÚBLICA',
+    'DELITOS DE VIOLENCIA CONTRA LA MUJER O MIEMBROS DEL NÚCLEO FAMILIAR'
+]
+
+#Etiqueta de delito grave (0/1)
+df_apre_clean["es_delito_grave"] = df_apre_clean["presunta_infraccion"].isin(delitos_interes).astype(int)
+
+#  Conteo solo de delitos graves (target alternativo)
+df_graves = (
+    df_apre_clean[df_apre_clean["es_delito_grave"] == 1]
+    .groupby(["lat_grid", "lon_grid", "fecha"])
+    .size()
+    .reset_index(name="conteo_delitos_graves")
+)
+
+# Asegurar que no exista antes de unir
+if "conteo_delitos_graves" in df_apre_clean.columns:
+    df_apre_clean.drop(columns=["conteo_delitos_graves"], inplace=True)
+
+# Merge limpio
+df_apre_clean = df_apre_clean.merge(
+    df_graves,
+    on=["lat_grid", "lon_grid", "fecha"],
+    how="left"
+)
+
+# Rellenar NaN con 0 (ningún delito grave en esa celda y día)
+df_apre_clean["conteo_delitos_graves"] = df_apre_clean["conteo_delitos_graves"].fillna(0)
+
+
+# LIMPIEZA DE POSIBLES DUPLICADOS (col_x, col_y)
+
+
+cols_a_borrar = [c for c in df_apre_clean.columns if c.endswith("_x") or c.endswith("_y")]
+
+if len(cols_a_borrar) > 0:
+    print(f"\nEliminando columnas duplicadas generadas por merge: {cols_a_borrar}")
+    df_apre_clean.drop(columns=cols_a_borrar, inplace=True)
+
+
+# GUARDAR DATAFRAME LIMPIO
+
+df_apre_clean.to_csv(nombre_datos_procesados, index=False)
+
+print("\nArchivo 'data/processed/aprehendidos_limpio_final.csv' generado")
+print(f"Registros finales: {len(df_apre_clean)}")
