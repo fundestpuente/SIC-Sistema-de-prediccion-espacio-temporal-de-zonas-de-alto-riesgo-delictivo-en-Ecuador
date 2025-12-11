@@ -1,9 +1,16 @@
 import pandas as pd
 import numpy as np
+import os
 
 #carga datasets
-df_apre = pd.read_csv("aprehendidos_limpio_final.csv")
-df_911 = pd.read_csv("ecu911_limpio_final.csv")
+ruta_padre = os.path.join(os.pardir, os.pardir, "data")
+ruta_procesados = os.path.join(ruta_padre, "processed")
+datos_aprehendidos = os.path.join(ruta_procesados, "aprehendidos_limpio_final.csv")
+datos_911 = os.path.join(ruta_procesados, "ecu911_limpio_final.csv")
+nombre_datos_procesados = os.path.join(ruta_procesados, "dataset_entrenamiento_final.csv")
+
+df_apre = pd.read_csv(datos_aprehendidos)
+df_911 = pd.read_csv(datos_911)
 
 # Normalizacion de fechas
 df_911["fecha"] = pd.to_datetime(df_911["fecha_dt"], errors="coerce").dt.date
@@ -56,7 +63,7 @@ features = [c for c in features if c in df_union.columns]
 df_final = df_union[features].copy()
 
 # guardar dataset final
-df_final.to_csv("dataset_entrenamiento_final.csv", index=False)
+df_final.to_csv(nombre_datos_procesados, index=False)
 print("dataset de entramiento guardado: dataset_entranamiento_final.csv")
 print("Registros totales:", len(df_final))
 print("Columnas:", df_final.columns.tolist())

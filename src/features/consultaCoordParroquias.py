@@ -5,7 +5,11 @@ import os
 
 API_KEY = os.getenv("google_maps_api_key")
 
-df = pd.read_excel("CODIFICACIÓN_2025.xlsx", sheet_name="PARROQUIAS")
+# 
+ruta_padre = os.path.join(os.pardir, os.pardir, "data")
+datos = os.path.join(ruta_padre, "raw", "CODIFICACIÓN_2025.xlsx")
+nombre_datos_procesados = os.path.join(ruta_padre, "processed","catalogo_parroquias_ecuador.csv")
+df = pd.read_excel(datos, sheet_name="PARROQUIAS")
 
 # Renombrar columnas
 df.columns = [
@@ -49,5 +53,5 @@ for i, row in df.iterrows():
 df["lat"] = latitudes
 df["lon"] = longitudes
 
-df.to_csv("catalogo_parroquias_ecuador.csv", index=False)
+df.to_csv(nombre_datos_procesados, index=False)
 print("LISTO: catalogo_parroquias_ecuador.csv generado.")

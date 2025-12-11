@@ -1,14 +1,27 @@
 #preprocesamiento datos de aprehendidos/detenidos
 import pandas as pd
 import numpy as np
+import os
 
 #CARGA DE DATOS
-nombre_archivo = 'detenidosaprehendidos/dataset/mdi_detenidosaprehendidos_pm_2025_enero_octubre.xlsx'
+ruta_padre = os.path.join(os.pardir, os.pardir, "data")
+datos_originales = os.path.join(
+    ruta_padre, 
+    "raw", 
+    "detenidosaprehendidos", 
+    "dataset", 
+    "mdi_detenidosaprehendidos_pm_2025_enero_octubre.xlsx"
+)
+nombre_datos_procesados = os.path.join(
+    ruta_padre,
+    "processed",
+    "aprehendidos_limpio_final.csv"
+)
 
 try:
     print("Cargando archivo Excel... esto puede tardar unos segundos...")
     df_apre = pd.read_excel(
-        nombre_archivo,
+        datos_originales,
         sheet_name=1,
         dtype={'codigo_parroquia': str},
         engine='openpyxl'
@@ -136,7 +149,7 @@ if len(cols_a_borrar) > 0:
 
 # GUARDAR DATAFRAME LIMPIO
 
-df_apre_clean.to_csv("aprehendidos_limpio_final.csv", index=False)
+df_apre_clean.to_csv(nombre_datos_procesados, index=False)
 
-print("\nArchivo 'aprehendidos_limpio_final.csv' generado")
+print("\nArchivo 'data/processed/aprehendidos_limpio_final.csv' generado")
 print(f"Registros finales: {len(df_apre_clean)}")

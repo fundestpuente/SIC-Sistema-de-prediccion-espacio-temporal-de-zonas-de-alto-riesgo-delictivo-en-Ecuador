@@ -2,8 +2,12 @@ import pandas as pd
 import glob
 import os
 #carga de dataset ecu911
-ruta_carpeta_911 = "ecu911/dataset/"
-archivos_csv = glob.glob(os.path.join(ruta_carpeta_911, "*.csv"))
+ruta_padre = os.path.join(os.pardir, os.pardir, "data")
+ruta_datos_originales = os.path.join(ruta_padre, "raw", "ecu911", "dataset")
+archivos_csv = glob.glob(os.path.join(ruta_datos_originales, "*.csv"))
+catalogo_parroquias = os.path.join(ruta_padre, "processed","catalogo_parroquias_ecuador.csv")
+
+nombre_datos_procesados = os.path.join(ruta_padre,"processed","ecu911_limpio_final.csv")
 
 lista_dfs = []
 
@@ -48,7 +52,7 @@ df_911["cod_parroquia"] = (
     .str.zfill(6)
 )
 #cargar catalogo de parroquias
-catalogo = pd.read_csv("catalogo_parroquias_ecuador.csv", dtype={"cod_parroquia": str})
+catalogo = pd.read_csv(catalogo_parroquias, dtype={"cod_parroquia": str})
 # Unir con catálogo para obtener lat/lon
 df_911 = df_911.merge(catalogo, on="cod_parroquia", how="left")
 
@@ -76,7 +80,7 @@ df_911 = df_911.merge(
 )
 
 # Guardar dataset limpio
-df_911.to_csv("ecu911_limpio_final.csv", index=False)
+df_911.to_csv(nombre_datos_procesados, index=False)
 
 print("ECU911 procesado correctamente")
 print(f"Registros finales: {len(df_911)}")
