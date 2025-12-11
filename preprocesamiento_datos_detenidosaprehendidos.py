@@ -18,7 +18,40 @@ try:
 except Exception as e:
     print("Error cargando el Excel:", e)
 
+# NORMALIZACIÓN DE DATOS DE LATITUD Y LONGITUD
+for col in ["latitud", "longitud"]:
+    df_apre[col] = (
+        df_apre[col]
+        .astype(str)
+        .str.replace(",", ".", regex=False)
+    )
+    df_apre[col] = pd.to_numeric(df_apre[col], errors="coerce")
 
+# ELIMINAR COLUMNAS INVÁLIDAS
+df_apre = df_apre.dropna(subset=["latitud", "longitud"])
+df_apre = df_apre[(df_apre["latitud"] != 0) & (df_apre["longitud"] != 0)]
+
+
+# PROCESAR FECHA Y HORA
+try:
+    df_apre["fecha"] = pd.to_datetime(df_apre["fecha_detencion_aprehension"], errors="coerce")
+
+    #HORA COMO STRING LIMPIO
+    df_apre["hora_limpia"] = (
+        df_apre["hora_detencion_aprehension"]
+        .astype(str)
+        .str.replace(" ", "")
+        .str.strip()
+    )
+
+    #COMBINAR FECHA Y HORA
+    df_apre["fecha_completa"] = pd.to_datetime(
+        df_apre["fecha"].astype(str) + " " + df_apre["hora_limpia"],
+        errors="coerce"
+    )
+
+except Exception as e:
+    print("Advertencia procesando fecha/hora:", e)
 
 # Seleccionar columnas de interés
 cols_interes = [
