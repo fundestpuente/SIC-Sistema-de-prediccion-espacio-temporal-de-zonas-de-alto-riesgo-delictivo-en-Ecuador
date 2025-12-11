@@ -1,6 +1,7 @@
 import pandas as pd
 import requests
 import time
+import os
 
 API_KEY = os.getenv("google_maps_api_key")
 
