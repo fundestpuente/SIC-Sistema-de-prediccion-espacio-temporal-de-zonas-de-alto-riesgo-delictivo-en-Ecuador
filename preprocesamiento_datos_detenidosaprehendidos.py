@@ -88,7 +88,55 @@ df_apre_clean = df_apre_clean.merge(
 )
 
 
-#guardar dataset limpio
-print("\n=== Dataset final limpio ===")
-print(df_apre_clean.head())
-print(f"Total registros finales: {len(df_apre_clean)}")
+
+
+delitos_interes = [
+    'DELITOS CONTRA EL DERECHO A LA PROPIEDAD',
+    'DELITOS POR LA PRODUCCIÓN O TRÁFICO ILÍCITO DE SUSTANCIAS CATALOGADAS SUJETAS A FISCALIZACIÓN',
+    'DELITOS CONTRA LA SEGURIDAD PÚBLICA',
+    'DELITOS CONTRA LA EFICIENCIA DE LA ADMINISTRACIÓN PÚBLICA',
+    'DELITOS DE VIOLENCIA CONTRA LA MUJER O MIEMBROS DEL NÚCLEO FAMILIAR'
+]
+
+#Etiqueta de delito grave (0/1)
+df_apre_clean["es_delito_grave"] = df_apre_clean["presunta_infraccion"].isin(delitos_interes).astype(int)
+
+#  Conteo solo de delitos graves (target alternativo)
+df_graves = (
+    df_apre_clean[df_apre_clean["es_delito_grave"] == 1]
+    .groupby(["lat_grid", "lon_grid", "fecha"])
+    .size()
+    .reset_index(name="conteo_delitos_graves")
+)
+
+# Asegurar que no exista antes de unir
+if "conteo_delitos_graves" in df_apre_clean.columns:
+    df_apre_clean.drop(columns=["conteo_delitos_graves"], inplace=True)
+
+# Merge limpio
+df_apre_clean = df_apre_clean.merge(
+    df_graves,
+    on=["lat_grid", "lon_grid", "fecha"],
+    how="left"
+)
+
+# Rellenar NaN con 0 (ningún delito grave en esa celda y día)
+df_apre_clean["conteo_delitos_graves"] = df_apre_clean["conteo_delitos_graves"].fillna(0)
+
+
+# LIMPIEZA DE POSIBLES DUPLICADOS (col_x, col_y)
+
+
+cols_a_borrar = [c for c in df_apre_clean.columns if c.endswith("_x") or c.endswith("_y")]
+
+if len(cols_a_borrar) > 0:
+    print(f"\nEliminando columnas duplicadas generadas por merge: {cols_a_borrar}")
+    df_apre_clean.drop(columns=cols_a_borrar, inplace=True)
+
+
+# GUARDAR DATAFRAME LIMPIO
+
+df_apre_clean.to_csv("aprehendidos_limpio_final.csv", index=False)
+
+print("\nArchivo 'aprehendidos_limpio_final.csv' generado")
+print(f"Registros finales: {len(df_apre_clean)}")
