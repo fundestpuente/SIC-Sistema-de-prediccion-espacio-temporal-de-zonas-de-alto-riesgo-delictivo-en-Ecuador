@@ -2,19 +2,24 @@
 from flask import Flask, request, jsonify
 from flask_cors import CORS
 import pandas as pd
-from predictor import (
+import os
+from src.models.predictor import (
     cargar_modelo, cargar_dataset,
     preparar_grid, predecir_riesgo, filtrar_por_zona
 )
-from zonas import ZONAS
+from src.models.zonas import ZONAS
 
 app = Flask(__name__)
 CORS(app) 
 
+# rutas de archivos
+ruta_dataset = os.path.join("data","processed","dataset_entrenamiento_final.csv")
+ruta_modelo = os.path.join("models","modelo_riesgo_delictivo.pkl")
+
 # Cargar modelo y dataset al iniciar
 print("🔄 Cargando modelo y dataset...")
-modelo = cargar_modelo()
-df = cargar_dataset()
+modelo = cargar_modelo(ruta_modelo)
+df = cargar_dataset(ruta_dataset)
 print(" Sistema listo")
 
 @app.route('/api/predecir', methods=['POST'])

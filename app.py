@@ -1,15 +1,16 @@
 import streamlit as st
 import pandas as pd
+import os
 import folium
 from folium.plugins import HeatMap
 from streamlit_folium import st_folium
 
-from predictor import (
+from src.models.predictor import (
     cargar_modelo, cargar_dataset,
     preparar_grid, predecir_riesgo, filtrar_por_zona
 )
 
-from zonas import ZONAS
+from src.models.zonas import ZONAS
 
 # ===== CONFIGURACIÓN DE LA PÁGINA =====
 st.set_page_config(
@@ -209,13 +210,16 @@ st.markdown("""
 """, unsafe_allow_html=True)
 
 # ===== CARGA DE RECURSOS =====
+ruta_dataset = os.path.join("data","processed","dataset_entrenamiento_final.csv")
+ruta_modelo = os.path.join("models","modelo_riesgo_delictivo.pkl")
+
 @st.cache_resource
 def get_modelo():
-    return cargar_modelo()
+    return cargar_modelo(ruta_modelo)
 
 @st.cache_resource
 def get_dataset():
-    return cargar_dataset()
+    return cargar_dataset(ruta_dataset)
 
 with st.spinner("🔄 Inicializando sistema..."):
     modelo = get_modelo()
