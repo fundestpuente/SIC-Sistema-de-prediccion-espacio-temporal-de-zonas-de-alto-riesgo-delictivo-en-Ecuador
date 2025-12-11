@@ -67,3 +67,28 @@ df_apre_clean["franja_horaria"] = df_apre_clean["fecha_completa"].dt.hour
 df_apre_clean["dia"] = df_apre_clean["fecha_completa"].dt.day
 df_apre_clean["mes"] = df_apre_clean["fecha_completa"].dt.month
 df_apre_clean["dia_semana"] = df_apre_clean["fecha_completa"].dt.dayofweek
+
+#grid espacial
+df_apre_clean["lat_grid"] = df_apre_clean["latitud"].round(3)
+df_apre_clean["lon_grid"] = df_apre_clean["longitud"].round(3)
+
+
+#conteo de delios por dia y zona
+grouped = (
+    df_apre_clean
+    .groupby(["lat_grid", "lon_grid", "fecha"])
+    .size()
+    .reset_index(name="conteo_delitos")
+)
+# unir conteo al dataframe principal
+df_apre_clean = df_apre_clean.merge(
+    grouped,
+    on=["lat_grid", "lon_grid", "fecha"],
+    how="left"
+)
+
+
+#guardar dataset limpio
+print("\n=== Dataset final limpio ===")
+print(df_apre_clean.head())
+print(f"Total registros finales: {len(df_apre_clean)}")
