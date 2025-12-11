@@ -17,6 +17,24 @@ df_union = df_apre.merge(
     suffixes=("_apre", "_911")
 )
 
+#Imputación de valores faltantes (NaN) en variables de conteo (Targets)
+for col in ["conteo_delitos", "conteo_delitos_graves", "conteo_llamadas_riesgo"]:
+    if col in df_union.columns:
+        df_union[col].fillna(0, inplace=True) #Imputación con cero
+    else:
+        df_union[col] = 0  # si no existe, la creamos
+
+#Ingeniería de Características Temporales
+
+if "mes" not in df_union.columns:
+    df_union["mes"] = pd.to_datetime(df_union["fecha"]).dt.month  #Extracción del mes
+
+if "dia" not in df_union.columns:
+    df_union["dia"] = pd.to_datetime(df_union["fecha"]).dt.day  #Extracción del dia del mes
+
+if "dia_semana" not in df_union.columns:
+    df_union["dia_semana"] = pd.to_datetime(df_union["fecha"]).dt.dayofweek   #Extracción del día de la semana
+    
 
 # Eliminar franja_horaria porque no contiene datos importantes
 if "franja_horaria" in df_union.columns:
