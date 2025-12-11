@@ -91,4 +91,4 @@ if "df_zona" in st.session_state:
 
     if st.button("Limpiar Mapa"):
         st.session_state.clear()
-        st.rerun()
+        st.rerun()
